@@ -1,0 +1,31 @@
+{
+  "agents": [
+    {
+      "id": "pco",
+      "department": "delivery",
+      "lead": false,
+      "name": "PROJECT CO-ORDINATOR",
+      "role": "Real-Time Project Operations Agent",
+      "does": "Keeps every project moving in real time: live milestone tracking, handoff alerts, blockers, and status updates before a deadline slips.",
+      "tools": [
+        "notion",
+        "gmail"
+      ],
+      "brief": "Monitor active project timelines every hour, flag blockages in the same workday, and push owners to clear dependencies before they affect delivery. Keep the owner updated with a live status snapshot during any risk event."
+    },
+    {
+      "id": "ilm",
+      "department": "sales",
+      "lead": false,
+      "name": "INBOUND LEADS MANAGER",
+      "role": "Real-Time Lead Intake Agent",
+      "does": "Qualifies every inbound lead in real time, routes hot opportunities to the right rep immediately, and follows up before momentum fades.",
+      "tools": [
+        "gmail",
+        "imessage",
+        "fullenrich"
+      ],
+      "brief": "Respond within 15 minutes for high-intent inquiries. Mark lead quality, route by fit, and send a follow-up note the same hour. Escalate anything that needs the owner or a sales call."
+    }
+  ]
+}
