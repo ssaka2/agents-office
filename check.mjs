@@ -310,6 +310,17 @@ else {
     try { browser = await chromium.launch({ args: ['--enable-unsafe-swiftshader', '--use-angle=swiftshader'] }); }
     catch { browser = await chromium.launch({ channel: 'chrome', args: ['--enable-unsafe-swiftshader', '--use-angle=swiftshader'] }); }
     const page = await browser.newPage({ viewport: { width: 1512, height: 900 } });
+    // Keep calendar assertions independent of month-end and weekend CI runs.
+    // Shift Date only; keep native animation frames, performance and timers for WebGL.
+    await page.addInitScript(() => {
+      const NativeDate = Date;
+      const offset = NativeDate.parse('2030-01-14T12:00:00Z') - NativeDate.now();
+      window.Date = new Proxy(NativeDate, {
+        construct: (target, args) => Reflect.construct(target, args.length ? args : [NativeDate.now() + offset]),
+        apply: () => new NativeDate(NativeDate.now() + offset).toString(),
+        get: (target, key) => key === 'now' ? () => NativeDate.now() + offset : Reflect.get(target, key),
+      });
+    });
     const errors = []; page.on('pageerror', e => errors.push(e.message)); page.on('console', m => { if (m.type() === 'error') errors.push(m.text().slice(0, 120)); });
     await page.goto('file://' + path.join(ROOT, 'dist', 'command-centre-v2.html') + '?s=check'); await page.waitForTimeout(3000);
     await step('smoke: loads without page errors', async () => { if (errors.length) throw new Error(errors[0]); });
@@ -327,7 +338,7 @@ else {
       await page.click('.tp-dd'); await page.click('.tp-menu button[data-k="marketing"]');
       await page.fill('.tp-in', 'cut a 15 second teaser from the demo reel'); await page.keyboard.press('Enter'); await page.waitForTimeout(600);
       const hint = await page.evaluate(() => document.querySelector('.tp-hint').textContent); if (!/Added/.test(hint)) throw new Error('hint: ' + hint);
-      const row = await page.evaluate(() => [...document.querySelectorAll('.tp-row .tp-t')].some(e => /teaser/i.test(e.textContent))); if (!row) throw new Error('row not in the feed');
+      await page.waitForFunction(() => [...document.querySelectorAll('.tp-row .tp-t')].some(e => /teaser/i.test(e.textContent)), null, { timeout: 10000 });
       return hint.trim().slice(0, 60);
     });
     await step('smoke: TEAM in the bar → the lead + piece cards on the desks (demo)', async () => { // V3.2 (16 Sep)
@@ -338,6 +349,9 @@ else {
       const pre = await page.evaluate(() => document.querySelector('.tp-hint').textContent); if (!/Team · SALES LEAD/.test(pre)) throw new Error('hint before Add: ' + pre);
       await page.keyboard.press('Enter'); await page.waitForTimeout(700);
       const hint = await page.evaluate(() => document.querySelector('.tp-hint').textContent); if (!/Added — SALES LEAD has it with/.test(hint)) throw new Error('hint: ' + hint);
+      await page.waitForFunction(() =>
+        [...document.querySelectorAll('.tp-row .tp-t')].some(e => /⚑ As a team, plan the spring/.test(e.textContent)) &&
+        document.querySelectorAll('.tp-row.piece').length >= 2, null, { timeout: 10000 });
       const n = await page.evaluate(() => ({ lead: [...document.querySelectorAll('.tp-row .tp-t')].filter(e => /⚑ As a team, plan the spring/.test(e.textContent)).length, pieces: document.querySelectorAll('.tp-row.piece').length, chip: [...document.querySelectorAll('.tp-team-chip')].map(e => e.textContent) }));
       if (n.lead !== 1 || n.pieces < 2 || !n.chip.some(c => /^TEAM [34]$/.test(c)) || !n.chip.includes('PIECE')) throw new Error(JSON.stringify(n));
       await page.fill('.tp-in', 'draft the renewal email'); await page.evaluate(() => document.querySelector('.tp-in').dispatchEvent(new Event('input', { bubbles: true })));
@@ -418,7 +432,11 @@ else {
       return `${cells} cells · ${rt} routine runs on the grid · rail ${rail} · task scheduled for ${target} · routine starts ${target} (none before) · marketing refused · week view 7`;
     });
     await step('smoke: department focus opens the chat rail', async () => {
-      await page.keyboard.press('1'); await page.waitForTimeout(1800);
+      await page.keyboard.press('1');
+      await page.waitForFunction(() => {
+        const rail = document.getElementById('rail');
+        return rail.classList.contains('agentOpen') && rail.classList.contains('open');
+      }, null, { timeout: 10000 });
       const cls = await page.evaluate(() => document.getElementById('rail').className); if (!/agentOpen/.test(cls) || !/open/.test(cls)) throw new Error('rail: ' + cls);
       const strip = await page.evaluate(() => document.querySelector('#topconn').className); if (!/focus/.test(strip)) throw new Error('top strip not centred');
       await page.keyboard.press('Escape'); await page.waitForTimeout(1200);
