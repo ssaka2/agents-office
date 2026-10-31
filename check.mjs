@@ -311,8 +311,8 @@ else {
     catch { browser = await chromium.launch({ channel: 'chrome', args: ['--enable-unsafe-swiftshader', '--use-angle=swiftshader'] }); }
     const page = await browser.newPage({ viewport: { width: 1512, height: 900 } });
     // Keep calendar assertions independent of month-end and weekend CI runs.
-    // Freeze Date only: animation frames and UI timers must continue normally.
-    await page.clock.setFixedTime(new Date('2030-01-14T12:00:00Z'));
+    // Let the clock advance so task timestamps and UI timers keep their ordering.
+    await page.clock.install({ time: new Date('2030-01-14T12:00:00Z') });
     const errors = []; page.on('pageerror', e => errors.push(e.message)); page.on('console', m => { if (m.type() === 'error') errors.push(m.text().slice(0, 120)); });
     await page.goto('file://' + path.join(ROOT, 'dist', 'command-centre-v2.html') + '?s=check'); await page.waitForTimeout(3000);
     await step('smoke: loads without page errors', async () => { if (errors.length) throw new Error(errors[0]); });
