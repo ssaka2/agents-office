@@ -338,7 +338,7 @@ else {
       await page.click('.tp-dd'); await page.click('.tp-menu button[data-k="marketing"]');
       await page.fill('.tp-in', 'cut a 15 second teaser from the demo reel'); await page.keyboard.press('Enter'); await page.waitForTimeout(600);
       const hint = await page.evaluate(() => document.querySelector('.tp-hint').textContent); if (!/Added/.test(hint)) throw new Error('hint: ' + hint);
-      await page.waitForFunction(() => [...document.querySelectorAll('.tp-row .tp-t')].some(e => /teaser/i.test(e.textContent)), null, { timeout: 10000 });
+      await page.waitForFunction(() => [...document.querySelectorAll('.tp-row .tp-t')].some(e => /15 second teaser from the demo reel/i.test(e.textContent)), null, { timeout: 10000 });
       return hint.trim().slice(0, 60);
     });
     await step('smoke: TEAM in the bar → the lead + piece cards on the desks (demo)', async () => { // V3.2 (16 Sep)
