@@ -21,9 +21,22 @@ on:
 
 jobs:
   build:
+    name: Datadog external monitoring
     runs-on: ubuntu-latest
 
     steps:
+    - name: Verify monitoring credentials are available
+      env:
+        DD_API_KEY: ${{ secrets.DD_API_KEY }}
+        DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+      run: |
+        missing=()
+        [[ -n "$DD_API_KEY" ]] || missing+=(DD_API_KEY)
+        [[ -n "$DD_APP_KEY" ]] || missing+=(DD_APP_KEY)
+        if (( ${#missing[@]} )); then
+          echo "::error::Datadog monitoring requires these repository secrets to be available to this run: ${missing[*]}"
+          exit 1
+        fi
     - uses: actions/checkout@v4
 
     # Run Synthetic tests within your GitHub workflow.
